@@ -1,21 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import base64
-import cv2
-import numpy as np
 
 from qr_model import classify_url
 
 app = FastAPI()
 
-# ----------------------------------------------------
-# FINAL CORRECT CORS CONFIGURATION (ONLY THIS BLOCK)
-# ----------------------------------------------------
+# 🔐 UPDATE THIS BEFORE DEPLOY
 origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://192.168.56.1:3000",   # your actual frontend origin
+    "https://quishingdetector.xyz/",
 ]
 
 app.add_middleware(
@@ -26,13 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ----------------------------------------------------
-
 class UrlRequest(BaseModel):
     url: str
-
-class ImageRequest(BaseModel):
-    image: str  # base64 image
 
 @app.get("/")
 def read_root():
@@ -50,39 +38,6 @@ def predict_url(req: UrlRequest):
     return {
         "url": url,
         "label": backend_label,
-        "model_label": label_str,
-        "score": proba,
-    }
-
-@app.post("/scan-qr")
-def scan_qr(req: ImageRequest):
-    data = req.image
-
-    if "," in data:
-        _, data = data.split(",", 1)
-
-    try:
-        img_bytes = base64.b64decode(data)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid base64")
-
-    nparr = np.frombuffer(img_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img is None:
-        raise HTTPException(status_code=400, detail="Image decode failed")
-
-    detector = cv2.QRCodeDetector()
-    qr_text, points, _ = detector.detectAndDecode(img)
-
-    if not qr_text:
-        return {"label": "suspicious", "url": None}
-
-    label_str, raw_pred, proba = classify_url(qr_text)
-    backend_label = "phishing" if raw_pred == 1 else "safe"
-
-    return {
-        "label": backend_label,
-        "url": qr_text,
         "model_label": label_str,
         "score": proba,
     }
