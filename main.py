@@ -6,11 +6,11 @@ from qr_model import classify_url
 
 app = FastAPI()
 
-# 🔐 UPDATE THIS BEFORE DEPLOY
 origins = [
-    "https://quishingdetector.xyz/",
+    "https://www.quishingdetector.xyz",
+    "https://quishingdetector.xyz",
+    "https://reactive-quishing-website.pages.dev",
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
